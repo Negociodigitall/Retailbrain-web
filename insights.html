@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Insights – Retail Brain</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --azul: #002FA5; --celeste: #00DFE8; --violeta: #7947FA; --menta: #38F1B8; --oscuro: #050414; --blanco: #ffffff;
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; overflow-x: hidden; }
+  body { font-family: 'Montserrat', sans-serif; background-color: var(--oscuro); color: var(--blanco); overflow-x: hidden; position: relative; }
+ html, body { max-width: 100%; overflow-x: hidden; }
+  .brand-ambient-glow { position: fixed; inset: 0; z-index: -2; pointer-events: none; overflow: hidden; }
+  .glow-orb { position: absolute; filter: blur(140px); opacity: 0.45; animation: floatAmbient 20s ease-in-out infinite alternate; }
+  .glow-orb.violeta { width: 50vw; height: 50vw; background: var(--violeta); top: -10%; left: -10%; }
+  .glow-orb.celeste { width: 40vw; height: 40vw; background: var(--celeste); bottom: -5%; right: -10%; animation-delay: -5s; opacity: 0.3; }
+  .glow-orb.azul { width: 30vw; height: 30vw; background: var(--azul); top: 40%; left: 40%; animation-duration: 25s; opacity: 0.2; }
+  @keyframes floatAmbient { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(40px,-40px) scale(1.1); } }
+ 
+  #canvas-3d { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none; opacity: 0.6; }
+ 
+  .geo-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+  .geo-shape-wrap { position: absolute; animation: geoFloat 20s ease-in-out infinite alternate; }
+  .geo-shape-wrap svg { display: block; }
+  .geo-shape-wrap.g1 { width: 320px; top: -5%; left: -5%; opacity: 0.38; animation-duration: 22s; }
+  .geo-shape-wrap.g2 { width: 280px; top: 20%; right: -4%; opacity: 0.42; animation-duration: 18s; animation-delay: -6s; }
+  .geo-shape-wrap.g3 { width: 200px; bottom: 5%; left: 8%; opacity: 0.30; animation-duration: 25s; animation-delay: -10s; }
+  .geo-shape-wrap.g4 { width: 160px; bottom: 18%; right: 5%; opacity: 0.35; animation-duration: 19s; animation-delay: -3s; }
+  @keyframes geoFloat { 0% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-18px) rotate(3deg); } 100% { transform: translateY(-10px) rotate(-2deg); } }
+ 
+  /* NAV */
+  nav { position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; display: flex; align-items: center; justify-content: space-between; padding: 24px 60px; background: rgba(5,4,20,0.2); backdrop-filter: blur(25px); border-bottom: 1px solid rgba(0,223,232,0.08); transition: all 0.5s ease; }
+  nav.scrolled { padding: 15px 60px; background: rgba(5,4,20,0.85); border-bottom: 1px solid rgba(121,71,250,0.3); box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
+  .nav-logo { display: flex; align-items: center; gap: 12px; text-decoration: none; z-index: 1001; }
+  .nav-logo-text { font-size: 1.2rem; font-weight: 300; letter-spacing: 2px; color: var(--blanco); }
+  .nav-logo-text span { font-weight: 900; background: linear-gradient(90deg, var(--celeste), var(--blanco)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .nav-links { display: flex; gap: 40px; list-style: none; }
+  .nav-links a { color: rgba(255,255,255,0.7); text-decoration: none; font-size: 0.8rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; position: relative; transition: all 0.3s ease; }
+  .nav-links a::after { content: ''; position: absolute; bottom: -8px; left: 50%; width: 0; height: 2px; background: var(--celeste); transition: all 0.4s ease; transform: translateX(-50%); box-shadow: 0 0 10px var(--celeste); }
+  .nav-links a:hover, .nav-links a.active { color: var(--blanco); }
+  .nav-links a:hover::after, .nav-links a.active::after { width: 100%; }
+  .nav-cta { background: linear-gradient(135deg, var(--azul), var(--violeta)); color: var(--blanco); border: 1px solid rgba(255,255,255,0.2); padding: 12px 32px; font-family: 'Montserrat', sans-serif; font-size: 0.8rem; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; border-radius: 50px; cursor: pointer; text-decoration: none; transition: all 0.4s ease; box-shadow: 0 10px 20px rgba(121,71,250,0.3); }
+  .nav-cta:hover { transform: translateY(-3px) scale(1.05); box-shadow: 0 15px 30px rgba(0,223,232,0.5); border-color: var(--celeste); }
+  .hamburger { display: none; flex-direction: column; gap: 6px; background: transparent; border: none; cursor: pointer; z-index: 1001; }
+  .hamburger span { width: 30px; height: 3px; background: var(--celeste); border-radius: 5px; transition: all 0.4s ease; }
+  .hamburger.active span:nth-child(1) { transform: translateY(9px) rotate(45deg); }
+  .hamburger.active span:nth-child(2) { opacity: 0; }
+  .hamburger.active span:nth-child(3) { transform: translateY(-9px) rotate(-45deg); }
+  .mobile-menu-overlay { position: fixed; inset: 0; background: rgba(5,4,20,0.97); backdrop-filter: blur(15px); z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.4s ease; }
+  .mobile-menu-overlay.active { opacity: 1; pointer-events: auto; }
+  .mobile-nav-links { list-style: none; text-align: center; display: flex; flex-direction: column; gap: 30px; }
+  .mobile-nav-links a { color: var(--blanco); font-size: 1.5rem; text-decoration: none; font-weight: 800; text-transform: uppercase; letter-spacing: 3px; display: block; transform: translateY(40px); opacity: 0; transition: all 0.5s ease; }
+  .mobile-menu-overlay.active .mobile-nav-links a { transform: translateY(0); opacity: 1; }
+ 
+  /* HERO */
+  .page-hero { min-height: 72vh; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; padding: 130px 60px 80px; z-index: 2; }
+  .page-hero-bg { position: absolute; inset: 0; background: radial-gradient(ellipse 80% 60% at 50% 60%, rgba(121,71,250,0.22), transparent 70%); }
+  .page-hero-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(0,223,232,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,223,232,0.04) 1px, transparent 1px); background-size: 60px 60px; animation: gridMove 20s linear infinite; }
+  @keyframes gridMove { 0% { transform: translateY(0); } 100% { transform: translateY(60px); } }
+  .page-hero-content { position: relative; z-index: 2; max-width: 900px; text-align: center; }
+  .page-label { display: inline-block; background: rgba(121,71,250,0.12); border: 1px solid rgba(121,71,250,0.35); padding: 7px 20px; border-radius: 50px; font-size: 0.72rem; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--violeta); margin-bottom: 26px; opacity: 0; animation: slideUp 0.6s 0.3s forwards; }
+  .page-title { font-size: clamp(2.6rem, 5vw, 4.2rem); font-weight: 900; line-height: 1.1; margin-bottom: 22px; opacity: 0; animation: slideUp 0.6s 0.5s forwards; }
+  .page-title em { font-style: normal; background: linear-gradient(90deg, var(--violeta), var(--celeste), var(--menta)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .page-subtitle { font-size: 1.1rem; font-weight: 300; color: rgba(255,255,255,0.65); line-height: 1.85; max-width: 680px; margin: 0 auto 40px; opacity: 0; animation: slideUp 0.6s 0.7s forwards; }
+  .hero-pills { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; opacity: 0; animation: slideUp 0.6s 0.9s forwards; }
+  .hero-pill { padding: 7px 18px; border-radius: 50px; border: 1px solid rgba(0,223,232,0.25); background: rgba(0,223,232,0.06); font-size: 0.75rem; font-weight: 700; letter-spacing: 1.5px; color: var(--celeste); text-transform: uppercase; }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+ 
+  /* MARQUEE */
+  .marquee-section { border-top: 1px solid rgba(0,223,232,0.12); border-bottom: 1px solid rgba(0,223,232,0.08); padding: 0; overflow: hidden; height: 50px; display: flex; align-items: center; background: rgba(0,47,165,0.05); position: relative; z-index: 2; }
+  .marquee-wrap { width: 100%; overflow: hidden; mask-image: linear-gradient(90deg, transparent, black 8%, black 92%, transparent); -webkit-mask-image: linear-gradient(90deg, transparent, black 8%, black 92%, transparent); }
+  .marquee-track { display: flex; gap: 0; white-space: nowrap; animation: marqueeScroll 30s linear infinite; width: max-content; }
+  .marquee-track:hover { animation-play-state: paused; }
+  @keyframes marqueeScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  .marquee-item { display: inline-flex; align-items: center; gap: 10px; padding: 0 32px; font-size: 0.7rem; font-weight: 800; letter-spacing: 2.5px; text-transform: uppercase; color: rgba(255,255,255,0.5); border-right: 1px solid rgba(255,255,255,0.07); white-space: nowrap; }
+  .marquee-item.c { color: var(--celeste); }
+  .marquee-item.v { color: #b08dff; }
+  .marquee-item.m { color: var(--menta); }
+  .mdot { width: 5px; height: 5px; border-radius: 50%; background: var(--celeste); box-shadow: 0 0 6px var(--celeste); flex-shrink: 0; }
+  .mdot.m { background: var(--menta); box-shadow: 0 0 6px var(--menta); }
+  .mdot.v { background: #b08dff; box-shadow: 0 0 6px #b08dff; }
+ 
+  /* SECTION SHARED */
+  .section-label { display: inline-block; background: rgba(0,223,232,0.07); border: 1px solid rgba(0,223,232,0.25); padding: 6px 18px; border-radius: 50px; font-size: 0.72rem; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--celeste); margin-bottom: 18px; }
+  .section-title { font-size: clamp(2rem, 4vw, 3rem); font-weight: 900; line-height: 1.15; margin-bottom: 20px; }
+  .section-title em { font-style: normal; background: linear-gradient(90deg, var(--celeste), var(--violeta)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .section-text { font-size: 1rem; font-weight: 300; color: rgba(255,255,255,0.68); line-height: 1.85; }
+ 
+  /* FILTERS */
+  .insights-filters-section { padding: 70px 60px 0; max-width: 1300px; margin: 0 auto; position: relative; z-index: 2; }
+  .insights-filters-header { text-align: center; margin-bottom: 50px; }
+  .filters-row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-bottom: 60px; }
+  .filter-btn { padding: 10px 24px; border-radius: 50px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.02); color: rgba(255,255,255,0.7); font-family: 'Montserrat', sans-serif; font-size: 0.8rem; font-weight: 700; letter-spacing: 1px; cursor: pointer; transition: all 0.3s ease; backdrop-filter: blur(10px); }
+  .filter-btn:hover, .filter-btn.active { background: linear-gradient(90deg, rgba(0,223,232,0.1), rgba(121,71,250,0.1)); border-color: var(--celeste); color: var(--celeste); box-shadow: 0 5px 15px rgba(0,223,232,0.2); }
+ 
+  /* GRID */
+  .insights-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; max-width: 1300px; margin: 0 auto; padding: 0 60px 100px; position: relative; z-index: 2; }
+  .card-wrapper { transition: opacity 0.4s ease; display: block; }
+  .card-wrapper.hide { display: none; }
+ 
+  /* SVC CARD */
+  .svc-card { background: linear-gradient(145deg, rgba(255,255,255,0.04) 0%, rgba(0,0,0,0.45) 100%); border: 1px solid rgba(255,255,255,0.07); border-radius: 24px; padding: 46px 38px; backdrop-filter: blur(20px); position: relative; cursor: pointer; transition: all 0.5s ease; overflow: hidden; display: flex; flex-direction: column; height: 100%; }
+  .svc-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 5px; background: var(--accent); border-radius: 24px 24px 0 0; transform: scaleX(0); transform-origin: left; transition: transform 0.5s ease; }
+  .svc-card:hover::before { transform: scaleX(1); }
+  .svc-card:hover { border-color: rgba(121,71,250,0.4); box-shadow: 0 40px 80px rgba(0,0,0,0.55), 0 0 40px rgba(121,71,250,0.12); transform: translateY(-8px); }
+  .card-wrapper[data-cat="estrategia"] .svc-card { --accent: linear-gradient(90deg, var(--violeta), var(--celeste)); }
+  .card-wrapper[data-cat="shopper"] .svc-card  { --accent: linear-gradient(90deg, var(--menta), var(--celeste)); }
+  .card-wrapper[data-cat="analitica"] .svc-card { --accent: linear-gradient(90deg, var(--azul), var(--celeste)); }
+ 
+  .svc-icon { width: 62px; height: 62px; border-radius: 18px; font-size: 1.9rem; display: flex; align-items: center; justify-content: center; margin-bottom: 22px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); transition: all 0.4s ease; }
+  .svc-card:hover .svc-icon { background: rgba(121,71,250,0.15); border-color: var(--celeste); box-shadow: 0 8px 20px rgba(0,223,232,0.25); transform: scale(1.1); }
+  .svc-tag { font-size: 0.65rem; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+  .svc-date { color: var(--celeste); }
+  .svc-name { font-size: 1.25rem; font-weight: 900; margin-bottom: 14px; color: var(--blanco); line-height: 1.4; transition: color 0.3s; }
+  .svc-card:hover .svc-name { color: var(--celeste); }
+  .svc-desc { font-size: 0.9rem; color: rgba(255,255,255,0.62); line-height: 1.8; margin-bottom: 24px; flex-grow: 1; }
+  .svc-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+  .chip { padding: 4px 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 50px; font-size: 0.7rem; font-weight: 600; color: rgba(255,255,255,0.65); transition: all 0.3s; }
+  .chip:hover { border-color: var(--celeste); color: var(--celeste); }
+  .svc-link { display: inline-flex; align-items: center; gap: 8px; font-size: 0.82rem; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase; color: var(--celeste); text-decoration: none; transition: gap 0.3s; margin-top: auto; }
+  .svc-card:hover .svc-link { gap: 14px; color: var(--blanco); }
+ 
+  /* MODAL */
+  .article-modal { position: fixed; inset: 0; z-index: 2000; background: rgba(5,4,20,0.92); backdrop-filter: blur(25px); display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.5s ease; padding: 40px 20px; }
+  .article-modal.active { opacity: 1; pointer-events: auto; }
+  .modal-container { background: linear-gradient(145deg, rgba(20,18,50,0.95) 0%, rgba(5,4,20,0.99) 100%); border: 1px solid rgba(0,223,232,0.2); width: 100%; max-width: 860px; max-height: 85vh; border-radius: 32px; overflow-y: auto; padding: 60px 56px; position: relative; box-shadow: 0 50px 100px rgba(0,0,0,0.8), 0 0 60px rgba(121,71,250,0.15); transform: translateY(40px) scale(0.95); transition: all 0.5s cubic-bezier(0.16,1,0.3,1); }
+  .article-modal.active .modal-container { transform: translateY(0) scale(1); }
+  .modal-close { position: absolute; top: 24px; right: 24px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); width: 44px; height: 44px; border-radius: 50%; color: var(--blanco); font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s; }
+  .modal-close:hover { background: var(--violeta); border-color: var(--celeste); transform: rotate(90deg); }
+  .modal-tag { display: inline-block; background: rgba(0,223,232,0.1); border: 1px solid var(--celeste); padding: 6px 16px; border-radius: 50px; font-size: 0.7rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--celeste); margin-bottom: 20px; }
+  .modal-title { font-size: 2rem; font-weight: 900; line-height: 1.25; margin-bottom: 28px; background: linear-gradient(90deg, var(--blanco), rgba(255,255,255,0.8)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .modal-body { font-size: 0.97rem; color: rgba(255,255,255,0.75); line-height: 1.95; }
+  .modal-body p { margin-bottom: 20px; }
+  .modal-body h4 { font-size: 1.15rem; color: var(--celeste); font-weight: 800; margin: 32px 0 14px; }
+  .modal-body ul { margin-bottom: 20px; padding-left: 22px; }
+  .modal-body li { margin-bottom: 10px; }
+  .modal-body strong { color: rgba(255,255,255,0.92); }
+ 
+  /* DIVIDER */
+  .section-divider { height: 1px; background: linear-gradient(90deg, transparent, rgba(0,223,232,0.2), transparent); margin: 0 60px; position: relative; z-index: 2; }
+ 
+  /* CTA */
+  .cta-section { padding: 0 60px 120px; position: relative; z-index: 2; }
+  .cta-band { border-radius: 30px; overflow: hidden; background: linear-gradient(135deg, var(--azul) 0%, var(--violeta) 50%, var(--azul) 100%); background-size: 200% auto; animation: bgShift 6s ease infinite; padding: 90px 80px; display: grid; grid-template-columns: 1fr auto; gap: 60px; align-items: center; position: relative; box-shadow: 0 30px 60px rgba(0,47,165,0.4); border: 1px solid rgba(255,255,255,0.1); max-width: 1200px; margin: 0 auto; }
+  @keyframes bgShift { 0%,100% { background-position: 0% center; } 50% { background-position: 100% center; } }
+  .cta-band::before { content: ''; position: absolute; right: -100px; top: -100px; width: 400px; height: 400px; border-radius: 50%; background: radial-gradient(circle, rgba(0,223,232,0.4), transparent 70%); mix-blend-mode: overlay; }
+  .cta-title { font-size: 2.4rem; font-weight: 900; margin-bottom: 14px; line-height: 1.1; position: relative; z-index: 2; }
+  .cta-text { font-size: 1.05rem; opacity: .9; font-weight: 300; line-height: 1.65; position: relative; z-index: 2; }
+  .cta-actions { display: flex; flex-direction: column; gap: 14px; align-items: center; z-index: 2; }
+  .btn-white { background: var(--blanco); color: var(--oscuro); padding: 17px 44px; border-radius: 50px; font-weight: 900; font-size: 0.95rem; letter-spacing: 1.5px; text-transform: uppercase; text-decoration: none; white-space: nowrap; transition: all 0.4s ease; box-shadow: 0 5px 15px rgba(0,0,0,0.25); display: inline-block; text-align: center; }
+  .btn-white:hover { transform: translateY(-5px) scale(1.05); box-shadow: 0 15px 40px rgba(0,0,0,0.45); color: var(--azul); }
+  .cta-note { font-size: 0.72rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; opacity: 0.75; }
+ 
+  /* FOOTER */
+   footer { position: relative; z-index: 2; background: rgba(5,4,20,0.97); border-top: 1px solid rgba(0,223,232,0.1); overflow: hidden; }
+  .footer-glow-accent { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 600px; height: 1px; background: linear-gradient(90deg, transparent, var(--celeste), var(--violeta), var(--celeste), transparent); opacity: 0.6; }
+  .footer-glow-blob { position: absolute; bottom: -80px; right: -80px; width: 300px; height: 300px; background: radial-gradient(circle, rgba(121,71,250,0.12), transparent 70%); pointer-events: none; }
+  .footer-inner { position: relative; z-index: 2; padding: 70px 60px 0; }
+  .footer-top { display: grid; grid-template-columns: 1.8fr 1fr 1fr 1.2fr; gap: 50px; padding-bottom: 50px; border-bottom: 1px solid rgba(255,255,255,0.07); }
+  .footer-logo-row { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; text-decoration: none; }
+  .footer-logo-name { font-size: 1.1rem; font-weight: 300; letter-spacing: 2.5px; color: var(--blanco); }
+  .footer-logo-name strong { font-weight: 900; background: linear-gradient(90deg, var(--celeste), var(--menta)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .footer-brand-text { font-size: 0.88rem; color: rgba(255,255,255,0.5); line-height: 1.85; margin-bottom: 24px; max-width: 280px; }
+  .footer-tagline { display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(135deg, rgba(0,223,232,0.08), rgba(121,71,250,0.08)); border: 1px solid rgba(0,223,232,0.15); border-radius: 50px; padding: 7px 18px; font-size: 0.7rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.6); margin-bottom: 24px; }
+  .footer-tagline-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--celeste); box-shadow: 0 0 6px var(--celeste); animation: pulse 2s ease infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .footer-social { display: flex; gap: 10px; }
+  .social-btn { width: 40px; height: 40px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.6); text-decoration: none; font-size: 0.8rem; font-weight: 800; transition: all 0.3s ease; }
+  .social-btn:hover { border-color: var(--celeste); color: var(--oscuro); background: var(--celeste); transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,223,232,0.4); }
+  .footer-col-title { font-size: 0.72rem; font-weight: 800; letter-spacing: 3px; text-transform: uppercase; color: var(--blanco); margin-bottom: 22px; display: flex; align-items: center; gap: 8px; }
+  .footer-col-title::before { content: ''; display: inline-block; width: 18px; height: 2px; background: linear-gradient(90deg, var(--celeste), var(--violeta)); border-radius: 2px; flex-shrink: 0; }
+  .footer-links { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+  .footer-links a { color: rgba(255,255,255,0.5); text-decoration: none; font-size: 0.88rem; font-weight: 500; display: flex; align-items: center; gap: 8px; transition: all 0.3s ease; padding: 4px 0; }
+  .footer-links a::before { content: '→'; font-size: 0.7rem; opacity: 0; transform: translateX(-6px); transition: all 0.3s ease; color: var(--celeste); }
+  .footer-links a:hover { color: var(--blanco); padding-left: 4px; }
+  .footer-links a:hover::before { opacity: 1; transform: translateX(0); }
+  .footer-contact-item { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
+  .footer-contact-icon { width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0; background: rgba(0,223,232,0.08); border: 1px solid rgba(0,223,232,0.15); display: flex; align-items: center; justify-content: center; font-size: 0.85rem; }
+  .footer-contact-text { font-size: 0.83rem; color: rgba(255,255,255,0.55); line-height: 1.5; }
+  .footer-contact-text a { color: rgba(255,255,255,0.55); text-decoration: none; transition: color 0.3s; }
+  .footer-contact-text a:hover { color: var(--celeste); }
+  .footer-contact-label { font-size: 0.65rem; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.3); display: block; margin-bottom: 2px; }
+  .footer-bottom-bar { display: flex; align-items: center; justify-content: space-between; padding: 22px 60px; font-size: 0.75rem; color: rgba(255,255,255,0.3); font-weight: 500; flex-wrap: wrap; gap: 12px; }
+  .footer-bottom-right { display: flex; align-items: center; gap: 24px; }
+  .footer-bottom-right a { color: rgba(255,255,255,0.3); text-decoration: none; transition: color 0.3s; }
+  .footer-bottom-right a:hover { color: var(--celeste); }
+  .footer-bottom-quote { font-style: italic; color: rgba(0,223,232,0.5); font-weight: 600; letter-spacing: 1px; }
+ 
+  /* REVEAL */
+  .reveal { opacity: 0; filter: blur(10px); transform: translateY(50px) scale(0.9); transition: all 1s cubic-bezier(0.16,1,0.3,1); }
+  .reveal.active { opacity: 1; filter: blur(0); transform: translateY(0) scale(1); }
+ 
+  @media (max-width: 900px) {
+    nav { padding: 15px 20px; }
+    .nav-links, .nav-cta { display: none; }
+    .hamburger { display: flex; }
+
+    /* HERO */
+    .page-hero { padding: 110px 20px 60px; min-height: auto; }
+    .page-title { font-size: clamp(2rem, 8vw, 3rem); }
+    .page-subtitle { font-size: 0.95rem; }
+    .hero-pills { gap: 8px; }
+    .hero-pill { font-size: 0.7rem; padding: 6px 14px; }
+
+    /* PODCAST SECTION */
+    .reveal[style*="padding: 80px 60px"],
+    section[style*="padding: 80px 60px"] { padding: 60px 20px !important; }
+    section > div[style*="grid-template-columns:1fr 1fr"] {
+      grid-template-columns: 1fr !important;
+      gap: 30px !important;
+    }
+
+    /* FILTERS */
+    .insights-filters-section { padding: 50px 20px 0; }
+    .filters-row { gap: 8px; }
+    .filter-btn { padding: 8px 16px; font-size: 0.72rem; }
+    .section-title { font-size: clamp(1.6rem, 6vw, 2.4rem); }
+
+    /* INSIGHTS GRID — 1 columna */
+    .insights-grid {
+      grid-template-columns: 1fr;
+      gap: 20px;
+      padding: 0 20px 60px;
+    }
+    .svc-card { padding: 32px 24px; }
+
+    /* CTA */
+    .cta-section { padding: 60px 20px 80px !important; }
+    .cta-band {
+      grid-template-columns: 1fr;
+      padding: 40px 24px;
+      margin: 0;
+      text-align: center;
+      border-radius: 20px;
+      box-sizing: border-box;
+      width: 100%;
+    }
+    .cta-title { font-size: 1.8rem; line-height: 1.2; }
+    .cta-text { font-size: 0.92rem; }
+    .cta-actions { align-items: center; }
+    .btn-white { padding: 14px 28px; font-size: 0.85rem; }
+
+    /* FOOTER */
+    .footer-inner { padding: 50px 20px 0; }
+    .footer-top { grid-template-columns: 1fr; gap: 36px; padding-bottom: 36px; }
+    .footer-bottom-bar { padding: 18px 20px; flex-direction: column; align-items: flex-start; gap: 10px; }
+    .footer-bottom-right { flex-wrap: wrap; gap: 16px; }
+
+    /* GEO SHAPES */
+    .geo-shape-wrap { opacity: 0.2 !important; }
+    .geo-shape-wrap.g1 { width: 160px; }
+    .geo-shape-wrap.g2 { width: 130px; }
+    .geo-shape-wrap.g3, .geo-shape-wrap.g4 { display: none; }
+
+    /* DIVIDER */
+    .section-divider { margin: 0 20px; }
+
+    /* MODAL */
+    .modal-container { padding: 40px 24px; border-radius: 20px; max-height: 90vh; }
+    .modal-title { font-size: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+ 
+<div class="brand-ambient-glow">
+  <div class="glow-orb violeta"></div>
+  <div class="glow-orb celeste"></div>
+  <div class="glow-orb azul"></div>
+</div>
+<canvas id="canvas-3d"></canvas>
+ 
+<div class="geo-bg" aria-hidden="true">
+  <div class="geo-shape-wrap g1">
+    <svg viewBox="0 0 320 280" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="rg1a" cx="30%" cy="20%" r="80%"><stop offset="0%" stop-color="#7947FA" stop-opacity="0.95"/><stop offset="50%" stop-color="#4B2FCB" stop-opacity="0.7"/><stop offset="100%" stop-color="#080B24" stop-opacity="0.9"/></radialGradient>
+        <radialGradient id="rg1b" cx="70%" cy="10%" r="75%"><stop offset="0%" stop-color="#00DFE8" stop-opacity="0.95"/><stop offset="50%" stop-color="#7947FA" stop-opacity="0.6"/><stop offset="100%" stop-color="#080B24" stop-opacity="0.9"/></radialGradient>
+      </defs>
+      <path d="M10,280 L10,130 Q10,10 90,10 Q170,10 170,130 L170,280 Z" fill="url(#rg1a)"/>
+      <rect x="190" y="10" width="120" height="200" rx="22" ry="22" fill="url(#rg1b)"/>
+    </svg>
+  </div>
+  <div class="geo-shape-wrap g2">
+    <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+      <defs><radialGradient id="rg2a" cx="35%" cy="25%" r="75%"><stop offset="0%" stop-color="#00DFE8" stop-opacity="0.9"/><stop offset="45%" stop-color="#7947FA" stop-opacity="0.7"/><stop offset="100%" stop-color="#080B24" stop-opacity="0.9"/></radialGradient></defs>
+      <polygon points="100,8 192,100 100,192 8,100" fill="url(#rg2a)"/>
+      <polygon points="100,28 172,100 100,172 28,100" fill="none" stroke="rgba(0,223,232,0.3)" stroke-width="1.5"/>
+    </svg>
+  </div>
+  <div class="geo-shape-wrap g3">
+    <svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg">
+      <defs><radialGradient id="rg3" cx="25%" cy="30%" r="85%"><stop offset="0%" stop-color="#38F1B8" stop-opacity="0.9"/><stop offset="40%" stop-color="#00DFE8" stop-opacity="0.7"/><stop offset="75%" stop-color="#7B2FBE" stop-opacity="0.6"/><stop offset="100%" stop-color="#080B24" stop-opacity="0.9"/></radialGradient></defs>
+      <rect x="10" y="10" width="180" height="140" rx="60" ry="60" fill="url(#rg3)"/>
+    </svg>
+  </div>
+  <div class="geo-shape-wrap g4">
+    <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="rg4a" cx="50%" cy="80%" r="75%"><stop offset="0%" stop-color="#00DFE8" stop-opacity="0.9"/><stop offset="50%" stop-color="#7947FA" stop-opacity="0.6"/><stop offset="100%" stop-color="#080B24" stop-opacity="0.85"/></radialGradient>
+        <radialGradient id="rg4b" cx="50%" cy="20%" r="70%"><stop offset="0%" stop-color="#7947FA" stop-opacity="0.9"/><stop offset="55%" stop-color="#4B2FCB" stop-opacity="0.6"/><stop offset="100%" stop-color="#080B24" stop-opacity="0.85"/></radialGradient>
+      </defs>
+      <polygon points="80,10 150,80 10,80" fill="url(#rg4b)"/>
+      <path d="M20,160 A60,60 0 0,1 140,160 Z" fill="url(#rg4a)"/>
+    </svg>
+  </div>
+</div>
+ 
+<!-- NAV — "Insights" en lugar de "Blog Brain" en todos los links -->
+<nav id="mainNav">
+  <a href="index.html" class="nav-logo">
+    <img src="Logos Fondo oscuro 2..png" alt="Logo Retail Brain" width="45" height="45">
+    <span class="nav-logo-text">RETAIL<span>BRAIN</span></span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="index.html">Inicio</a></li>
+    <li><a href="nosotros.html">Nosotros</a></li>
+    <li><a href="servicios.html">Servicios</a></li>
+    <li><a href="faq.html">FAQ</a></li>
+    <li><a href="insights.html" class="active">Insights</a></li>
+    <li><a href="contacto.html">Contacto</a></li>
+  </ul>
+  <a href="contacto.html" class="nav-cta">Hablemos</a>
+  <button class="hamburger" id="hamburger" aria-label="Abrir Menú"><span></span><span></span><span></span></button>
+</nav>
+ 
+<div class="mobile-menu-overlay" id="mobileMenu">
+  <ul class="mobile-nav-links">
+    <li><a href="index.html">Inicio</a></li>
+    <li><a href="nosotros.html">Nosotros</a></li>
+    <li><a href="servicios.html">Servicios</a></li>
+    <li><a href="faq.html">FAQ</a></li>
+    <li><a href="insights.html" class="active">Insights</a></li>
+    <li><a href="contacto.html">Contacto</a></li>
+  </ul>
+  <div style="margin-top:40px"><a href="contacto.html" class="nav-cta" style="display:inline-block">Hablemos</a></div>
+</div>
+ 
+<!-- HERO -->
+<section class="page-hero">
+  <div class="page-hero-bg"></div>
+  <div class="page-hero-grid"></div>
+  <div class="page-hero-content">
+    <div class="page-label">Conocimiento & Estrategia</div>
+    <h1 class="page-title">Insights que hacen<br><em>crecer categorías</em></h1>
+    <p class="page-subtitle">Conocimiento especializado en Category Management para marcas, retailers y canales comerciales que quieren transformar datos en decisiones que rentabilizan.</p>
+    <div class="hero-pills">
+      <span class="hero-pill">Estrategia de Categoría</span>
+      <span class="hero-pill">Shopper Insights</span>
+      <span class="hero-pill">Planogramas</span>
+      <span class="hero-pill">Category Analytics</span>
+    </div>
+  </div>
+</section>
+ 
+<!-- MARQUEE -->
+<div class="marquee-section">
+  <div class="marquee-wrap">
+    <div class="marquee-track">
+      <span class="marquee-item c"><span class="mdot"></span>Category Management</span>
+      <span class="marquee-item"><span class="mdot m"></span>Planogramas estratégicos</span>
+      <span class="marquee-item m"><span class="mdot m"></span>Shopper Insights</span>
+      <span class="marquee-item v"><span class="mdot v"></span>Estrategia de Surtido</span>
+      <span class="marquee-item"><span class="mdot"></span>Space Management</span>
+      <span class="marquee-item c"><span class="mdot"></span>Category Analytics</span>
+      <span class="marquee-item"><span class="mdot m"></span>Visión de Categoría</span>
+      <span class="marquee-item m"><span class="mdot m"></span>Benchmark Competencia</span>
+      <span class="marquee-item v"><span class="mdot v"></span>Elasticidad de Precios</span>
+      <span class="marquee-item"><span class="mdot"></span>E-Commerce CatMan</span>
+      <span class="marquee-item c"><span class="mdot"></span>Portafolios Rentables</span>
+      <span class="marquee-item"><span class="mdot m"></span>Canales Comerciales</span>
+      <!-- duplicate -->
+      <span class="marquee-item c"><span class="mdot"></span>Category Management</span>
+      <span class="marquee-item"><span class="mdot m"></span>Planogramas estratégicos</span>
+      <span class="marquee-item m"><span class="mdot m"></span>Shopper Insights</span>
+      <span class="marquee-item v"><span class="mdot v"></span>Estrategia de Surtido</span>
+      <span class="marquee-item"><span class="mdot"></span>Space Management</span>
+      <span class="marquee-item c"><span class="mdot"></span>Category Analytics</span>
+      <span class="marquee-item"><span class="mdot m"></span>Visión de Categoría</span>
+      <span class="marquee-item m"><span class="mdot m"></span>Benchmark Competencia</span>
+      <span class="marquee-item v"><span class="mdot v"></span>Elasticidad de Precios</span>
+      <span class="marquee-item"><span class="mdot"></span>E-Commerce CatMan</span>
+      <span class="marquee-item c"><span class="mdot"></span>Portafolios Rentables</span>
+      <span class="marquee-item"><span class="mdot m"></span>Canales Comerciales</span>
+    </div>
+  </div>
+</div>
+
+<!-- PODCAST -->
+<section class="reveal" style="position:relative; z-index:2; padding: 80px 60px; border-bottom: 1px solid rgba(0,223,232,0.1);">
+  <div style="max-width:1200px; margin:0 auto; display:grid; grid-template-columns:1fr 1fr; gap:60px; align-items:center;">
+
+    <!-- Texto izquierda -->
+    <div>
+      <div class="section-label">Podcast</div>
+      <h2 style="font-size:clamp(2rem,4vw,3rem); font-weight:900; line-height:1.15; margin-bottom:20px; color:var(--blanco);">
+        Piensa como<br>
+        <em style="font-style:normal; background:linear-gradient(90deg,var(--celeste),var(--menta)); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">tu cliente.</em>
+      </h2>
+      <p style="font-size:1rem; font-weight:300; color:rgba(255,255,255,0.68); line-height:1.85; margin-bottom:32px;">
+        Un espacio para conversar sobre retail, consumo, shopper behavior, estrategia comercial y decisiones que conectan con la vida real del consumidor.
+      </p>
+      <!-- ↓ Cambia el href por tu link (Spotify, YouTube, etc.) -->
+      <a href="https://www.youtube.com/watch?v=vw1tagsgrwc&list=PLjWPcARlNVpqv9oo0DBaVLbiHvevg12QR//TU_LINK_YOUTUBE" target="_blank"
+         style="display:inline-flex; align-items:center; gap:10px; background:linear-gradient(135deg,var(--violeta),var(--azul)); color:var(--blanco); padding:16px 36px; border-radius:50px; font-size:0.85rem; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; text-decoration:none; border:1px solid rgba(255,255,255,0.15); box-shadow:0 10px 30px rgba(121,71,250,0.35); transition:all 0.3s ease;"
+         onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 15px 40px rgba(121,71,250,0.5)'"
+         onmouseout="this.style.transform=''; this.style.boxShadow='0 10px 30px rgba(121,71,250,0.35)'">
+        🎙️ &nbsp;Escuchar podcast
+      </a>
+    </div>
+
+    <!-- Card derecha -->
+    <div style="background:linear-gradient(145deg,rgba(121,71,250,0.12),rgba(0,0,0,0.55)); border:1px solid rgba(121,71,250,0.3); border-radius:28px; padding:44px 40px; backdrop-filter:blur(20px); position:relative; overflow:hidden;">
+      <div style="position:absolute; top:0; left:0; right:0; height:4px; background:linear-gradient(90deg,var(--violeta),var(--celeste),var(--menta)); border-radius:28px 28px 0 0;"></div>
+      <div style="font-size:3rem; margin-bottom:20px;">🎙️</div>
+      <div style="font-size:0.7rem; font-weight:800; letter-spacing:3px; text-transform:uppercase; color:#b08dff; margin-bottom:12px;">Nuevo episodio</div>
+      <h3 style="font-size:1.4rem; font-weight:900; color:var(--blanco); margin-bottom:14px; line-height:1.3;">Piensa como tu cliente</h3>
+      <p style="font-size:0.9rem; color:rgba(255,255,255,0.65); line-height:1.8; margin-bottom:24px;">
+        Conversaciones sobre retail, marcas y estrategia comercial lideradas por Dayana Ramírez, CEO & Founder de Retail Brain.
+      </p>
+      <!-- Plataformas: agrega tus links reales -->
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <a href="https://open.spotify.com/show/6no6CLCMlLinieSiN4Lffo?si=ZR4CF-D-Slm9lCuJ1gXUtA" target="_blank"
+           style="padding:8px 18px; background:rgba(30,215,96,0.12); border:1px solid rgba(30,215,96,0.3); border-radius:50px; font-size:0.75rem; font-weight:700; color:#1ED760; text-decoration:none; letter-spacing:1px; transition:all 0.3s;"
+           onmouseover="this.style.background='rgba(30,215,96,0.25)'"
+           onmouseout="this.style.background='rgba(30,215,96,0.12)'">
+          Spotify
+        </a>
+        <a href="https://www.youtube.com/watch?v=vw1tagsgrwc&list=PLjWPcARlNVpqv9oo0DBaVLbiHvevg12QR//TU_LINK_YOUTUBE" target="_blank"
+           style="padding:8px 18px; background:rgba(255,0,0,0.1); border:1px solid rgba(255,0,0,0.25); border-radius:50px; font-size:0.75rem; font-weight:700; color:#FF4444; text-decoration:none; letter-spacing:1px; transition:all 0.3s;"
+           onmouseover="this.style.background='rgba(255,0,0,0.2)'"
+           onmouseout="this.style.background='rgba(255,0,0,0.1)'">
+          YouTube
+        </a>
+        
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Responsive mobile -->
+  <style>
+    @media (max-width:900px) {
+      .podcast-grid { grid-template-columns: 1fr !important; }
+    }
+  </style>
+</section>
+<!-- FIN PODCAST -->
+ 
+<!-- FILTERS + HEADER -->
+<section class="insights-filters-section reveal">
+  <div class="insights-filters-header">
+    <div class="section-label">Todos los insights</div>
+    <h2 class="section-title">Contenido que <em>hace crecer categorías</em></h2>
+    <p class="section-text" style="max-width:620px;margin:0 auto 40px;">Artículos especializados en Category Management, shopper behavior y analytics para líderes comerciales que toman decisiones con datos.</p>
+  </div>
+  <div class="filters-row">
+    <button class="filter-btn active" onclick="filterPosts('all', this)">Todos</button>
+    <button class="filter-btn" onclick="filterPosts('estrategia', this)">Estrategia de Categoría</button>
+    <button class="filter-btn" onclick="filterPosts('shopper', this)">Shopper & Comportamiento</button>
+    <button class="filter-btn" onclick="filterPosts('analitica', this)">Analítica & Datos</button>
+  </div>
+</section>
+ 
+<!-- INSIGHTS GRID -->
+<div class="insights-grid">
+ 
+  <!-- 1 -->
+  <div class="card-wrapper reveal" data-cat="estrategia">
+    <div class="svc-card tilt-card" onclick="openArticle('categorias-estrategia')">
+      <div class="svc-icon">🎯</div>
+      <div class="svc-tag">Estrategia de Categoría <span class="svc-date">Category Mindset</span></div>
+      <h3 class="svc-name">Las categorías no crecen por intuición. Crecen con estrategia.</h3>
+      <p class="svc-desc">La mayoría de los portafolios tienen más productos de los que el shopper puede procesar. Descubre cómo una visión estratégica de categoría conecta datos, surtido y ejecución para generar crecimiento real.</p>
+      <div class="svc-chips"><span class="chip">Visión de Categoría</span><span class="chip">Surtido</span><span class="chip">Estrategia</span></div>
+      <span class="svc-link">Leer insight →</span>
+    </div>
+  </div>
+ 
+  <!-- 2 -->
+  <div class="card-wrapper reveal" data-cat="estrategia">
+    <div class="svc-card tilt-card" onclick="openArticle('portafolios-saturados')">
+      <div class="svc-icon">🗂️</div>
+      <div class="svc-tag">Estrategia de Categoría <span class="svc-date">Category Mindset</span></div>
+      <h3 class="svc-name">Portafolios saturados: menos SKUs, más rentabilidad</h3>
+      <p class="svc-desc">Tener más productos no significa vender más. Los portafolios saturados generan confusión en el shopper, quiebres de stock ocultos y pérdida de margen. Así se optimiza el surtido con datos reales.</p>
+      <div class="svc-chips"><span class="chip">Optimización de Surtido</span><span class="chip">SKU</span><span class="chip">Margen</span></div>
+      <span class="svc-link">Leer insight →</span>
+    </div>
+  </div>
+ 
+  <!-- 3 -->
+  <div class="card-wrapper reveal" data-cat="estrategia">
+    <div class="svc-card tilt-card" onclick="openArticle('planogramas')">
+      <div class="svc-icon">📐</div>
+      <div class="svc-tag">Estrategia de Categoría <span class="svc-date">Category Mindset</span></div>
+      <h3 class="svc-name">Planogramas estratégicos: el anaquel como ventaja competitiva</h3>
+      <p class="svc-desc">Un planograma bien construido no solo organiza productos, transforma el espacio en ventas. Aprende cómo diseñar planimetrías que respetan el árbol de decisión del comprador y maximizan el metro lineal.</p>
+      <div class="svc-chips"><span class="chip">Planogramas</span><span class="chip">Space Management</span><span class="chip">PDV</span></div>
+      <span class="svc-link">Leer insight →</span>
+    </div>
+  </div>
+ 
+  <!-- 4 -->
+  <div class="card-wrapper reveal" data-cat="shopper">
+    <div class="svc-card tilt-card" onclick="openArticle('piensa-como-cliente')">
+      <div class="svc-icon">🧠</div>
+      <div class="svc-tag">Shopper & Comportamiento <span class="svc-date">Category Mindset</span></div>
+      <h3 class="svc-name">Piensa como tu cliente: el shopper en el centro de la categoría</h3>
+      <p class="svc-desc">El shopper no compra productos, resuelve necesidades. Entender su árbol de decisión, sus misiones de compra y sus contextos de consumo es la base de cualquier estrategia de categoría que realmente funcione.</p>
+      <div class="svc-chips"><span class="chip">Shopper Insights</span><span class="chip">Árbol de decisión</span><span class="chip">Comportamiento</span></div>
+      <span class="svc-link">Leer insight →</span>
+    </div>
+  </div>
+ 
+  <!-- 5 -->
+  <div class="card-wrapper reveal" data-cat="shopper">
+    <div class="svc-card tilt-card" onclick="openArticle('canastas-canales')">
+      <div class="svc-icon">🛒</div>
+      <div class="svc-tag">Shopper & Comportamiento <span class="svc-date">Category Mindset</span></div>
+      <h3 class="svc-name">Canastas, canales y contextos: conocimiento aplicado al retail</h3>
+      <p class="svc-desc">Retail Brain trabaja con un visión amplia del retail: cada categoría tiene su dinámica específica según el canal y el contexto de compra. Así se construye conocimiento aplicable en supermercados, canales comerciales y e-commerce.</p>
+      <div class="svc-chips"><span class="chip">Canales Comerciales</span><span class="chip">Canastas</span><span class="chip">E-Commerce</span></div>
+      <span class="svc-link">Leer insight →</span>
+    </div>
+  </div>
+ 
+  <!-- 6 -->
+  <div class="card-wrapper reveal" data-cat="analitica">
+    <div class="svc-card tilt-card" onclick="openArticle('category-analytics')">
+      <div class="svc-icon">📊</div>
+      <div class="svc-tag">Analítica & Datos <span class="svc-date">Category Mindset</span></div>
+      <h3 class="svc-name">Category Analytics: de los datos a las decisiones de góndola</h3>
+      <p class="svc-desc">Los datos de sell-in y sell-out, combinados con información de participación de mercado y benchmark competitivo, permiten tomar decisiones de surtido, precio y exhibición con evidencia, no con suposiciones.</p>
+      <div class="svc-chips"><span class="chip">Category Analytics</span><span class="chip">Sell-out</span><span class="chip">Benchmark</span></div>
+      <span class="svc-link">Leer insight →</span>
+    </div>
+  </div>
+ 
+  <!-- 7 -->
+  <div class="card-wrapper reveal" data-cat="analitica">
+    <div class="svc-card tilt-card" onclick="openArticle('elasticidad-precios')">
+      <div class="svc-icon">💹</div>
+      <div class="svc-tag">Analítica & Datos <span class="svc-date">Category Mindset</span></div>
+      <h3 class="svc-name">Elasticidad de precios: cómo fijar precios sin perder participación</h3>
+      <p class="svc-desc">El precio correcto no es el más bajo ni el más alto, es el que maximiza el margen sin sacrificar volumen. Aprende cómo medir la elasticidad de precios en tu categoría y usarla como ventaja estratégica en negociación con cadenas.</p>
+      <div class="svc-chips"><span class="chip">Pricing</span><span class="chip">Elasticidad</span><span class="chip">Negociación</span></div>
+      <span class="svc-link">Leer insight →</span>
+    </div>
+  </div>
+ 
+  <!-- 8 -->
+  <div class="card-wrapper reveal" data-cat="estrategia">
+    <div class="svc-card tilt-card" onclick="openArticle('espacios-productivos')">
+      <div class="svc-icon">📦</div>
+      <div class="svc-tag">Estrategia de Categoría <span class="svc-date">Category Mindset</span></div>
+      <h3 class="svc-name">Espacios poco productivos: cómo activar cada centímetro de góndola</h3>
+      <p class="svc-desc">El espacio en góndola es un activo limitado y costoso. Los metros lineales mal asignados generan pérdidas invisibles. Descubre cómo auditar la productividad de tu espacio y redistribuirlo según el desempeño real de cada SKU.</p>
+      <div class="svc-chips"><span class="chip">Space Management</span><span class="chip">Góndola</span><span class="chip">Productividad</span></div>
+      <span class="svc-link">Leer insight →</span>
+    </div>
+  </div>
+ 
+  <!-- 9 -->
+  <div class="card-wrapper reveal" data-cat="shopper">
+    <div class="svc-card tilt-card" onclick="openArticle('decisiones-desconectadas')">
+      <div class="svc-icon">🔗</div>
+      <div class="svc-tag">Shopper & Comportamiento <span class="svc-date">Category Mindset</span></div>
+      <h3 class="svc-name">Decisiones desconectadas: el costo oculto de no conocer tu categoría</h3>
+      <p class="svc-desc">Muchas marcas y retailers toman decisiones de surtido, precio y exhibición sin conectar los datos con el comportamiento real del comprador. Así se generan quiebres, sobrestock y pérdida de participación silenciosa.</p>
+      <div class="svc-chips"><span class="chip">Diagnóstico</span><span class="chip">Quiebres de stock</span><span class="chip">Participación</span></div>
+      <span class="svc-link">Leer insight →</span>
+    </div>
+  </div>
+ 
+</div>
+ 
+<!-- MODAL -->
+<div class="article-modal" id="articleModal">
+  <div class="modal-container">
+    <button class="modal-close" onclick="closeArticle()">✕</button>
+    <div id="modalContent"></div>
+  </div>
+</div>
+ 
+<div class="section-divider"></div>
+ 
+<!-- CTA -->
+<section class="cta-section reveal" style="padding-top:100px;">
+  <div class="cta-band">
+    <div>
+      <h2 class="cta-title">¿Listo para hacer crecer<br>tus categorías?</h2>
+      <p class="cta-text">Nuestros expertos en Category Management están listos para transformar la gestión de tus categorías en una ventaja competitiva real. Sin compromisos, 100% personalizado.</p>
+    </div>
+    <div class="cta-actions">
+      <a href="contacto.html" class="btn-white">Agendar diagnóstico</a>
+      <span class="cta-note">Sin compromisos · 100% personalizado</span>
+    </div>
+  </div>
+</section>
+ 
+<!-- FOOTER -->
+<footer class="reveal">
+  <div class="footer-glow-accent"></div>
+  <div class="footer-glow-blob"></div>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div>
+        <a href="index.html" class="footer-logo-row">
+          <img src="Logos Fondo oscuro 2..png" alt="Logo Retail Brain" width="42" height="42">
+          <span class="footer-logo-name">RETAIL<strong>BRAIN</strong></span>
+        </a>
+        <p class="footer-brand-text">Consultoría especializada en Category Management. Transformamos tus datos en mejores decisiones.</p>
+        <div class="footer-tagline"><span class="footer-tagline-dot"></span>Donde todo se conecta</div>
+        <div class="footer-social">
+          <a href="#" class="social-btn" title="LinkedIn">in</a>
+          <a href="#" class="social-btn" title="Instagram">ig</a>
+          <a href="https://wa.me/50670336425" target="_blank" class="social-btn" title="WhatsApp">wa</a>
+        </div>
+      </div>
+      <div>
+        <div class="footer-col-title">Empresa</div>
+        <ul class="footer-links">
+          <li><a href="nosotros.html">Nosotros</a></li>
+          <li><a href="servicios.html">Servicios</a></li>
+          <li><a href="insights.html">Insights</a></li>
+          <li><a href="faq.html">FAQ</a></li>
+          <li><a href="contacto.html">Contacto</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">Category Mindset</div>
+        <ul class="footer-links">
+          <li><a href="servicios.html#category">Category Starter</a></li>
+          <li><a href="servicios.html#category">Category Growth</a></li>
+          <li><a href="servicios.html#category">Category Leader</a></li>
+          <li><a href="contacto.html">Solicitar propuesta</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">Contacto</div>
+        <div class="footer-contact-item">
+          <div class="footer-contact-icon">✉️</div>
+          <div class="footer-contact-text">
+            <span class="footer-contact-label">Email</span>
+            <a href="mailto:info@theretailbrain.com">info@theretailbrain.com</a>
+          </div>
+        </div>
+        <div class="footer-contact-item">
+          <div class="footer-contact-icon">📞</div>
+          <div class="footer-contact-text">
+            <span class="footer-contact-label">Teléfono</span>
+            <a href="tel:+50648001886">(+506) 4800-1886</a>
+          </div>
+        </div>
+        <div class="footer-contact-item">
+          <div class="footer-contact-icon">💬</div>
+          <div class="footer-contact-text">
+            <span class="footer-contact-label">WhatsApp</span>
+            <a href="https://wa.me/50670336425">(+506) 7033-6425</a>
+          </div>
+        </div>
+        <div class="footer-contact-item">
+          <div class="footer-contact-icon">📍</div>
+          <div class="footer-contact-text">
+            <span class="footer-contact-label">Ubicación</span>
+            Costa Rica, San José, Escazú
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom-bar">
+    <span>© 2026 Retail Brain. Todos los derechos reservados.</span>
+    <div class="footer-bottom-right">
+      <span class="footer-bottom-quote">"Donde todo se conecta."</span>
+      <a href="#">Privacidad</a>
+      <a href="#">Términos</a>
+    </div>
+  </div>
+</footer>
+ 
+<script>
+// ─── ARTICLE DATA — Contenido de Category Management ───
+const articlesData = {
+ 
+  'categorias-estrategia': {
+    tag: 'Estrategia de Categoría · Category Mindset',
+    title: 'Las categorías no crecen por intuición. Crecen con estrategia.',
+    body: `
+      <p>Muchas marcas y retailers asumen que conocen su categoría porque llevan años vendiéndola. Pero conocer no es lo mismo que gestionar estratégicamente. En Retail Brain entendemos que el crecimiento sostenible de una categoría requiere un proceso estructurado: datos, estrategia, ejecución y medición.</p>
+      <h4>¿Qué es realmente Category Management?</h4>
+      <p>Category Management es el proceso mediante el cual una empresa gestiona sus categorías de productos como unidades estratégicas de negocio, con el objetivo de maximizar las ventas y la rentabilidad para el retailer y el proveedor, al mismo tiempo que se satisfacen las necesidades del shopper.</p>
+      <p>No se trata solo de organizar el anaquel. Es un proceso que integra datos de sell-in y sell-out, comportamiento del comprador, benchmark competitivo y estrategia comercial en una visión de 360° de la categoría.</p>
+      <h4>Los tres problemas más comunes en categorías sin estrategia</h4>
+      <ul>
+        <li><strong>Portafolios saturados:</strong> demasiados SKUs compitiendo entre sí, con baja rotación y alto costo logístico.</li>
+        <li><strong>Espacios poco productivos:</strong> metros lineales mal asignados que no reflejan la demanda real del shopper.</li>
+        <li><strong>Decisiones desconectadas:</strong> estrategias de precio, surtido y exhibición tomadas sin datos integrados del punto de venta.</li>
+      </ul>
+      <h4>La metodología Category Mindset</h4>
+      <p>En Retail Brain desarrollamos <strong>Category Mindset</strong>, una metodología que estructura el proceso de gestión de categorías en cinco pasos: Diagnóstico, Oportunidades, Estrategia, Implementación y Seguimiento. Cada paso está respaldado por datos reales, herramientas analíticas y acompañamiento continuo con las cadenas y clientes asesorados.</p>
+      <p>El resultado: categorías con surtido optimizado, espacios más productivos y decisiones comerciales conectadas con la realidad del punto de venta.</p>
+    `
+  },
+ 
+  'portafolios-saturados': {
+    tag: 'Estrategia de Categoría · Category Mindset',
+    title: 'Portafolios saturados: menos SKUs, más rentabilidad',
+    body: `
+      <p>Uno de los errores más costosos en retail es confundir variedad con valor. Un portafolio con cientos de SKUs puede parecer atractivo en papel, pero en la práctica genera confusión en el comprador, incrementa los costos logísticos y diluye la rentabilidad por metro lineal.</p>
+      <h4>El efecto de la saturación en el shopper</h4>
+      <p>Estudios de comportamiento de compra muestran que cuando un shopper enfrenta demasiadas opciones similares, el tiempo de decisión aumenta, la satisfacción disminuye y la probabilidad de compra por impulso cae significativamente. Este fenómeno se conoce como <strong>"parálisis por análisis"</strong> y es uno de los enemigos silenciosos del crecimiento en góndola.</p>
+      <h4>Cómo auditar un portafolio con datos</h4>
+      <p>En Retail Brain clasificamos cada SKU del portafolio según su contribución real a la categoría, utilizando una <strong>Matriz de Rotación-Margen</strong>:</p>
+      <ul>
+        <li><strong>SKUs Core:</strong> alta rotación y margen adecuado. Son la columna vertebral de la categoría.</li>
+        <li><strong>SKUs de Nicho:</strong> baja rotación pero margen alto o valor estratégico para el shopper.</li>
+        <li><strong>SKUs Canibalistas:</strong> compiten directamente con Core sin agregar valor diferenciado.</li>
+        <li><strong>SKUs Muertos:</strong> baja rotación, bajo margen, alta ocupación de espacio. Candidatos inmediatos a depuración.</li>
+      </ul>
+      <h4>El principio de "Menos es Más" en categorías</h4>
+      <p>Al reducir y optimizar el surtido, las categorías liberan espacio para incrementar el facing de los productos con mejor desempeño, se reducen los quiebres de stock ocultos y se simplifica la experiencia de compra. En promedio, una depuración bien ejecutada puede incrementar las ventas de los SKUs Core entre un 15% y un 25%.</p>
+    `
+  },
+ 
+  'planogramas': {
+    tag: 'Estrategia de Categoría · Category Mindset',
+    title: 'Planogramas estratégicos: el anaquel como ventaja competitiva',
+    body: `
+      <p>Un planograma no es solo un dibujo del anaquel. Es la expresión física de la estrategia de categoría. Cada producto en cada posición comunica algo al comprador y genera un impacto directo en las ventas y el margen del punto de venta.</p>
+      <h4>¿Qué hace estratégico a un planograma?</h4>
+      <p>Un planograma estratégico parte del <strong>árbol de decisión del comprador</strong>: ¿qué busca primero cuando llega a la góndola? ¿Marca, sabor, tamaño, beneficio funcional, precio? La respuesta a estas preguntas define el orden de lectura del anaquel y la lógica de bloques que maximiza la conversión.</p>
+      <ul>
+        <li><strong>Bloques de marca:</strong> agrupan productos de la misma marca para generar impacto visual y facilitar la búsqueda.</li>
+        <li><strong>Bloques de segmento:</strong> organizan por tipo de producto o beneficio, ideal cuando el comprador decide primero por necesidad.</li>
+        <li><strong>Bloques de precio:</strong> de menor a mayor, útil en categorías donde el precio es el primer filtro de decisión.</li>
+      </ul>
+      <h4>Planimetrías por Clúster vs. por Punto de Venta</h4>
+      <p>No todas las tiendas son iguales. En Retail Brain desarrollamos dos niveles de planimetría: <strong>por Clúster de Tiendas</strong> (agrupando locales por tamaño, formato o perfil de shopper) y <strong>por Punto de Venta individual</strong> para cadenas con alta variabilidad. Esto garantiza que cada tienda tenga el surtido y la exhibición correcta para su shopper específico.</p>
+      <h4>Foto de éxito y seguimiento en PDV</h4>
+      <p>Todo planograma incluye una <strong>Foto de Éxito</strong>: la imagen de referencia que muestra cómo debe verse la góndola implementada. Esta herramienta es clave para el equipo de mercaderistas y para el seguimiento de la ejecución en campo.</p>
+    `
+  },
+ 
+  'piensa-como-cliente': {
+    tag: 'Shopper & Comportamiento · Category Mindset',
+    title: 'Piensa como tu cliente: el shopper en el centro de la categoría',
+    body: `
+      <p>En Category Management hay una diferencia fundamental que muchas marcas ignoran: el <strong>consumidor</strong> es quien usa o consume el producto, pero el <strong>shopper</strong> es quien lo compra. No siempre son la misma persona, y no siempre tienen las mismas prioridades en el punto de venta.</p>
+      <h4>¿Qué es el árbol de decisión del comprador?</h4>
+      <p>El árbol de decisión es la jerarquía mental que sigue el shopper cuando selecciona un producto frente al anaquel. Es la secuencia de preguntas que se hace (generalmente de forma inconsciente) antes de poner un producto en su canasta:</p>
+      <ul>
+        <li>¿Primero elige por marca, por segmento, por precio o por tamaño?</li>
+        <li>¿Tiene una misión de compra planificada o es una compra de impulso?</li>
+        <li>¿Qué señales visuales en la góndola aceleran o frenan su decisión?</li>
+      </ul>
+      <h4>Misiones de compra y contextos de consumo</h4>
+      <p>Retail Brain aplica un enfoque de <strong>misiones de compra</strong> para entender por qué el shopper visita cada canal. Una misma persona puede ir al supermercado una vez a la semana para abastecerse (compra planificada, alta sensibilidad al precio) y a la tienda de conveniencia tres veces a la semana para resolver una necesidad inmediata (compra de impulso, alta sensibilidad a la disponibilidad).</p>
+      <p>Conocer estas misiones permite diseñar surtidos y exhibiciones diferenciadas por canal, maximizando la conversión en cada punto de contacto con el shopper.</p>
+      <h4>Pensar como tu cliente en la práctica</h4>
+      <p>En los servicios de Category Mindset, incorporamos sesiones de <strong>Shopper Immersion</strong> donde analizamos el comportamiento real en tienda, complementado con datos de sell-out por SKU y segmento. El resultado: estrategias de categoría construidas desde la perspectiva del comprador, no desde los intereses del proveedor.</p>
+    `
+  },
+ 
+  'canastas-canales': {
+    tag: 'Shopper & Comportamiento · Category Mindset',
+    title: 'Canastas, canales y contextos: conocimiento aplicado al retail',
+    body: `
+      <p>Retail Brain trabaja con una visión amplia del retail: entendemos que cada categoría tiene su dinámica específica según el canal, el momento y el contexto de compra. No existe una solución única para todos los formatos.</p>
+      <h4>Canastas y compras: el valor de entender qué compra junto con qué</h4>
+      <p>El análisis de canasta permite identificar qué productos se compran juntos con mayor frecuencia, qué categorías complementarias pueden activarse con cross-merchandising estratégico y qué segmentos de shopper tienen mayor ticket promedio. Esta información es clave para diseñar activaciones de punto de venta que incrementen el valor por transacción.</p>
+      <h4>Canales comerciales: cada formato tiene su lógica</h4>
+      <p>Trabajamos con los principales formatos del retail moderno y tradicional:</p>
+      <ul>
+        <li><strong>Supermercados e hipermercados:</strong> gestión de categorías con alta complejidad de surtido y planimetrías por clúster.</li>
+        <li><strong>Canales de conveniencia:</strong> surtido reducido, alta rotación y enfoque en misiones de compra rápidas.</li>
+        <li><strong>Canales de mayoreo y distribución:</strong> estrategias de sell-in orientadas al volumen y la rentabilidad por ruta.</li>
+        <li><strong>E-Commerce:</strong> aplicación de E-CatMan con optimización de fichas de producto, surtido digital y análisis de comportamiento online.</li>
+      </ul>
+      <h4>Contextos de compra: la misma categoría, distintas realidades</h4>
+      <p>Una categoría como bebidas puede tener comportamientos completamente diferentes en un supermercado vs. una tienda de conveniencia vs. una plataforma de e-commerce. En Retail Brain desarrollamos estrategias diferenciadas por contexto, garantizando que la categoría esté optimizada en cada canal donde compite.</p>
+    `
+  },
+ 
+  'category-analytics': {
+    tag: 'Analítica & Datos · Category Mindset',
+    title: 'Category Analytics: de los datos a las decisiones de góndola',
+    body: `
+      <p>Los datos están en todas partes: portales B2B de cadenas, sistemas de sell-out, paneles de consumidor, reportes de participación de mercado. El problema no es la falta de datos, es saber qué hacer con ellos en el contexto específico de una categoría.</p>
+      <h4>Los indicadores clave en Category Analytics</h4>
+      <p>En Retail Brain trabajamos con un conjunto definido de KPIs de categoría que permiten tomar decisiones informadas en surtido, precio, promoción y exhibición:</p>
+      <ul>
+        <li><strong>Participación de mercado por SKU y segmento:</strong> ¿Dónde está ganando y perdiendo la categoría?</li>
+        <li><strong>Rotación de inventario (días de cobertura):</strong> ¿Hay riesgo de quiebre o sobrestock?</li>
+        <li><strong>Índice de distribución numérica y ponderada:</strong> ¿El producto está donde debe estar?</li>
+        <li><strong>Elasticidad precio-volumen:</strong> ¿Qué pasa con el volumen cuando cambia el precio?</li>
+        <li><strong>Eficiencia de espacio (ventas por metro lineal):</strong> ¿Cada centímetro de góndola está justificando su asignación?</li>
+      </ul>
+      <h4>Benchmark competitivo: saber dónde están los demás</h4>
+      <p>El análisis de la competencia en góndola es fundamental para identificar oportunidades. En Retail Brain realizamos auditorías regulares de anaquel que incluyen: análisis de facing por marca, precios del competidor, materiales de visibilidad y cambios en la estrategia de exhibición. Esta información se integra en los reportes de categoría para dar contexto a los datos internos.</p>
+      <h4>Del análisis a la acción</h4>
+      <p>La diferencia entre un reporte de datos y un verdadero insight de categoría está en la recomendación accionable. En Category Mindset, cada análisis termina con un <strong>Plan de Acción Comercial</strong> concreto: qué cambiar, dónde hacerlo, en qué plazo y cómo medirlo.</p>
+    `
+  },
+ 
+  'elasticidad-precios': {
+    tag: 'Analítica & Datos · Category Mindset',
+    title: 'Elasticidad de precios: cómo fijar precios sin perder participación',
+    body: `
+      <p>El precio es una de las variables más sensibles en la gestión de categorías. Una decisión incorrecta puede generar pérdidas de volumen, deterioro de la imagen de precio de la marca y conflictos con el retailer. Entender la elasticidad precio-volumen de cada SKU es esencial para negociar con inteligencia.</p>
+      <h4>¿Qué es la elasticidad de precios en el contexto de CatMan?</h4>
+      <p>La elasticidad precio-volumen mide cuánto cambia el volumen de ventas ante un cambio porcentual en el precio. Si un producto es <strong>inelástico</strong> (elasticidad < 1), las ventas caen poco cuando sube el precio, lo que significa margen de maniobra para ajustar precios al alza. Si es <strong>elástico</strong> (elasticidad > 1), el volumen cae significativamente ante aumentos de precio, lo que requiere mayor cuidado en la estrategia de pricing.</p>
+      <h4>Aplicación práctica en negociación con cadenas</h4>
+      <p>Conocer la elasticidad de precios de tu categoría te permite:</p>
+      <ul>
+        <li>Defender incrementos de precio con datos objetivos ante el comprador del retailer.</li>
+        <li>Identificar qué SKUs tienen mayor tolerancia al precio y cuáles deben mantenerse como ancla de precio.</li>
+        <li>Diseñar estrategias de promoción que incrementen volumen sin erosionar el precio base de largo plazo.</li>
+        <li>Analizar el impacto en la canasta del shopper cuando cambia el precio de uno o varios productos de la categoría.</li>
+      </ul>
+      <h4>La Calculadora de Elasticidad de Retail Brain</h4>
+      <p>En Retail Brain hemos desarrollado herramientas analíticas propias, incluyendo una <strong>Calculadora de Elasticidad de Precios</strong> que permite simular escenarios de precio y proyectar el impacto en ventas, margen y participación de mercado antes de tomar decisiones. Esta herramienta es parte del servicio Category Mindset en los planes Growth y Leader.</p>
+    `
+  },
+ 
+  'espacios-productivos': {
+    tag: 'Estrategia de Categoría · Category Mindset',
+    title: 'Espacios poco productivos: cómo activar cada centímetro de góndola',
+    body: `
+      <p>En un supermercado promedio, entre el 20% y el 30% del espacio en góndola está asignado a productos que generan menos del 5% de las ventas de la categoría. Este espacio improductivo representa una pérdida de oportunidad enorme para el retailer y para las marcas con mejor desempeño.</p>
+      <h4>Auditoría de productividad de espacio</h4>
+      <p>El primer paso para activar un espacio improductivo es medirlo. En Retail Brain realizamos auditorías que calculan el <strong>índice de productividad de espacio</strong> para cada SKU y segmento:</p>
+      <ul>
+        <li><strong>Ventas por metro lineal:</strong> ¿Cuánto genera cada centímetro asignado a este producto?</li>
+        <li><strong>Margen bruto por metro lineal:</strong> ¿Es más rentable el espacio que ocupa A que el que ocupa B?</li>
+        <li><strong>Participación de espacio vs. participación de ventas:</strong> ¿El espacio asignado refleja el desempeño real del producto?</li>
+      </ul>
+      <h4>Redistribución estratégica del espacio</h4>
+      <p>Una vez identificados los espacios improductivos, el proceso de redistribución considera: incrementar el facing de los SKUs Core con mayor rotación, incorporar nuevas referencias con potencial de crecimiento, y eliminar o reducir los SKUs con desempeño consistentemente bajo.</p>
+      <p>Este proceso se realiza en coordinación con el equipo de compras del retailer, respaldado por datos que justifican cada cambio y proyectan el impacto esperado en las ventas de la categoría.</p>
+      <h4>Secuenciales de acomodo y foto de éxito</h4>
+      <p>Todo cambio de espacio se documenta con <strong>Secuenciales de Acomodo</strong> (guías paso a paso para el mercaderista) y una <strong>Foto de Éxito</strong> que muestra el estado final esperado del anaquel. Esto garantiza consistencia en la implementación y facilita el seguimiento en campo.</p>
+    `
+  },
+ 
+  'decisiones-desconectadas': {
+    tag: 'Shopper & Comportamiento · Category Mindset',
+    title: 'Decisiones desconectadas: el costo oculto de no conocer tu categoría',
+    body: `
+      <p>Una de las principales causas del estancamiento o pérdida de participación en una categoría no es la competencia ni el precio: es la falta de conexión entre los datos disponibles y las decisiones comerciales que se toman a diario.</p>
+      <h4>¿Cómo se generan las decisiones desconectadas?</h4>
+      <p>Las decisiones desconectadas ocurren cuando:</p>
+      <ul>
+        <li>El equipo comercial toma decisiones de surtido basadas en históricos de sell-in, sin considerar el sell-out real en el punto de venta.</li>
+        <li>Las estrategias de precio se definen por margen objetivo sin analizar la elasticidad o el posicionamiento competitivo.</li>
+        <li>Los planogramas se diseñan según disponibilidad de espacio, no según el árbol de decisión del shopper.</li>
+        <li>Las activaciones de punto de venta se repiten año a año sin medir su impacto real en ventas incrementales.</li>
+      </ul>
+      <h4>El costo oculto de las decisiones desconectadas</h4>
+      <p>Los efectos no siempre son inmediatos, pero son acumulativos:</p>
+      <ul>
+        <li><strong>Quiebres de stock ocultos:</strong> el producto está en el inventario pero no visible en góndola, generando pérdidas de venta silenciosas.</li>
+        <li><strong>Canibalización interna:</strong> dos SKUs propios compiten por el mismo shopper sin agregar volumen incremental.</li>
+        <li><strong>Pérdida de participación progresiva:</strong> la competencia avanza en el espacio y en la preferencia del comprador sin que la marca lo perciba hasta que es demasiado tarde.</li>
+      </ul>
+      <h4>La solución: una visión de categoría integrada</h4>
+      <p>En Retail Brain conectamos todas las fuentes de datos disponibles —sell-in, sell-out, participación de mercado, datos de shopper y benchmark competitivo— en una visión integrada de la categoría. Esta visión se traduce en decisiones comerciales respaldadas, estrategias de categoría coherentes y ejecución en punto de venta que genera resultados medibles y sostenibles.</p>
+    `
+  }
+};
+ 
+// MODAL
+function openArticle(id) {
+  const data = articlesData[id];
+  if (!data) return;
+  document.getElementById('modalContent').innerHTML = `
+    <span class="modal-tag">${data.tag}</span>
+    <h2 class="modal-title">${data.title}</h2>
+    <div class="modal-body">${data.body}</div>
+  `;
+  document.getElementById('articleModal').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+function closeArticle() {
+  document.getElementById('articleModal').classList.remove('active');
+  document.body.style.overflow = '';
+}
+document.getElementById('articleModal').addEventListener('click', function(e) {
+  if (e.target === this) closeArticle();
+});
+ 
+// FILTERS
+function filterPosts(cat, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.card-wrapper').forEach(card => {
+    card.classList.toggle('hide', cat !== 'all' && card.dataset.cat !== cat);
+  });
+}
+ 
+// NAV
+const nav = document.getElementById('mainNav');
+window.addEventListener('scroll', () => nav.classList.toggle('scrolled', window.scrollY > 50));
+ 
+// MOBILE MENU
+const hamburger = document.getElementById('hamburger');
+const mobileMenu = document.getElementById('mobileMenu');
+hamburger.addEventListener('click', () => {
+  hamburger.classList.toggle('active');
+  mobileMenu.classList.toggle('active');
+  document.body.style.overflow = mobileMenu.classList.contains('active') ? 'hidden' : '';
+});
+document.querySelectorAll('.mobile-nav-links a').forEach(l => {
+  l.addEventListener('click', () => { hamburger.classList.remove('active'); mobileMenu.classList.remove('active'); document.body.style.overflow = ''; });
+});
+ 
+// REVEAL
+const revealObs = new IntersectionObserver((entries, obs) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('active'); obs.unobserve(e.target); } });
+}, { threshold: 0.08, rootMargin: '0px 0px -80px 0px' });
+document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
+ 
+// TILT
+document.querySelectorAll('.tilt-card').forEach(card => {
+  card.addEventListener('mousemove', e => {
+    if (window.innerWidth > 900) {
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left - rect.width/2;
+      const y = e.clientY - rect.top - rect.height/2;
+      card.style.transform = `perspective(1000px) rotateX(${(y/rect.height)*-10}deg) rotateY(${(x/rect.width)*10}deg) scale3d(1.02,1.02,1.02)`;
+    }
+  });
+  card.addEventListener('mouseleave', () => {
+    card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1,1,1)';
+  });
+});
+ 
+// PARTICLES
+const canvas = document.getElementById('canvas-3d');
+const ctx = canvas.getContext('2d');
+let W, H, particles = [], mouse = { x: null, y: null };
+window.addEventListener('mousemove', e => { mouse.x = e.x; mouse.y = e.y; });
+function initCanvas() {
+  W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; particles = [];
+  const count = W < 900 ? 40 : 80;
+  for (let i = 0; i < count; i++) { particles.push({ x: Math.random()*W, y: Math.random()*H, z: Math.random()*2, vx: (Math.random()-0.5)*0.4, vy: (Math.random()-0.5)*0.4, size: Math.random()*2+1.5 }); }
+}
+function animateCanvas() {
+  requestAnimationFrame(animateCanvas); ctx.clearRect(0, 0, W, H);
+  for (let i = 0; i < particles.length; i++) {
+    let p = particles[i]; p.x += p.vx; p.y += p.vy;
+    if (p.x < 0 || p.x > W) p.vx *= -1; if (p.y < 0 || p.y > H) p.vy *= -1;
+    let px = p.x, py = p.y;
+    if (mouse.x && W > 900) { px += (mouse.x-W/2)*(p.z*0.05); py += (mouse.y-H/2)*(p.z*0.05); }
+    ctx.beginPath(); ctx.arc(px, py, p.size, 0, Math.PI*2); ctx.fillStyle = `rgba(0,223,232,${p.z*0.6})`; ctx.fill();
+    for (let j = i+1; j < particles.length; j++) {
+      let p2 = particles[j], p2x = p2.x, p2y = p2.y;
+      if (mouse.x && W > 900) { p2x += (mouse.x-W/2)*(p2.z*0.05); p2y += (mouse.y-H/2)*(p2.z*0.05); }
+      let dist = Math.hypot(px-p2x, py-p2y);
+      if (dist < 180) { ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(p2x,p2y); ctx.strokeStyle = `rgba(121,71,250,${(1-dist/180)*0.22*((p.z+p2.z)/2)})`; ctx.lineWidth = 1.2; ctx.stroke(); }
+    }
+  }
+}
+window.addEventListener('resize', initCanvas); initCanvas(); animateCanvas();
+</script>
+</body>
+</html>
